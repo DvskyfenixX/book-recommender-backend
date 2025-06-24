@@ -4,7 +4,7 @@ from rules_loader import get_rules  # Importar el loader
 from flask_cors import CORS 
 
 app = Flask(__name__)
-CORS(app, origins=["https://dvskyfenixx.github.io/book-recommender-frontend/"]) # Permitir CORS para el frontend
+CORS(app, origins=["https://dvskyfenixx.github.io"])  # <-- CORS seguro y explícito
 @app.route("/recomendar", methods=["POST"])
 def recomendar():
     data = request.get_json()
