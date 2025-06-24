@@ -1,8 +1,4 @@
 flask
 pandas
-mlxtend
-matplotlib
-networkx
-scikit-learn
-umap-learn
 gunicorn
+flask-cors
