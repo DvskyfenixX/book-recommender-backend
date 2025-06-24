@@ -1,20 +1,20 @@
 import pandas as pd
-from mlxtend.frequent_patterns import apriori, association_rules
 
-# Cargar tus datos ya tratados
-df = pd.read_pickle('modelos/df.pkl.gz')
-te_df = df.apply(lambda x: x.dropna().tolist(), axis=1)
+def recomendar_libros(input_books, rules, top_n=3):
+    input_books = set(input_books)
+    
+    # Buscar reglas donde el antecedente completo está en el input
+    reglas_exacto = rules[rules['antecedents'].apply(lambda x: x.issubset(input_books))]
 
-# Preparar datos
-from mlxtend.preprocessing import TransactionEncoder
-te = TransactionEncoder()
-te_ary = te.fit(te_df).transform(te_df)
-df_tf = pd.DataFrame(te_ary, columns=te.columns_)
+    # Si no hay suficientes, buscar reglas donde haya al menos un libro en común
+    if len(reglas_exacto) < top_n:
+        reglas_relajadas = rules[rules['antecedents'].apply(lambda x: len(input_books & x) > 0)]
+        reglas_usar = pd.concat([reglas_exacto, reglas_relajadas]).drop_duplicates()
+    else:
+        reglas_usar = reglas_exacto
 
-# Ejecutar Apriori
-frequent_itemsets = apriori(df_tf, min_support=0.01, use_colnames=True)
-rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=0.3)
+    # Ordenar por confianza y lift
+    reglas_ordenadas = reglas_usar.sort_values(by=['confidence', 'lift'], ascending=False).head(top_n)
 
-def recomendar_libros(libro):
-    result = rules[rules['antecedents'].apply(lambda x: libro in x)]
-    return result[['antecedents', 'consequents', 'confidence', 'lift']].to_dict(orient='records')
+    # Devolver reglas como lista de dicts para graficar y recomendar
+    return reglas_ordenadas[['antecedents', 'consequents', 'confidence', 'lift']].to_dict(orient='records')
