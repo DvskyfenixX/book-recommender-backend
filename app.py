@@ -1,23 +1,20 @@
 from flask import Flask, request, jsonify
 from recommender import recomendar_libros
-from graph_generator import generar_grafo
-import pandas as pd
-app = Flask(__name__)
+from rules_loader import get_rules  # Importar el loader
 
-# Carga las reglas ya calculadas
-rules = pd.read_pickle('modelos/rules.pkl.gz')
+app = Flask(__name__)
 
 @app.route("/recomendar", methods=["POST"])
 def recomendar():
     data = request.get_json()
     libros = data.get("libros")
-    if not libros:
+
+    if not libros or not isinstance(libros, list):
         return jsonify({"error": "Se requiere una lista de libros"}), 400
 
+    rules = get_rules()
     reglas = recomendar_libros(libros, rules)
-    grafo = generar_grafo(reglas, libros)
-    
-    # Extraer solo los consequents para enviar como recomendaciones simples
+
     recomendaciones = []
     for r in reglas:
         for libro_rec in r['consequents']:
@@ -26,11 +23,7 @@ def recomendar():
 
     return jsonify({
         "recomendaciones": recomendaciones,
-        "grafo": grafo
     })
 
-@app.route("/health", methods=["GET"])
-def health():
-    return jsonify({"status": "ok"}), 200  
-
- 
+if __name__ == "__main__":
+    app.run()
